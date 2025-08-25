@@ -1,0 +1,2 @@
+### Delete a person
+DELETE https://phonebook-hqr8.onrender.com/persons/2
