@@ -100,3 +100,38 @@ app.post('/persons', (request, response) => {
     response.json(newPerson)
     
 })
+
+
+lsdnfsnfndslk
+
+//Delete a person 
+app.delete('/persons/:id', (request, response) => {
+    console.log("tryna delete person with id ", request.params.id)
+    Person.findByIdAndDelete(request.params.id)
+    .then(result => { 
+        response.status(204).end()
+    })
+    .catch(error => console.log("weoops,... delete didn work :3"))
+
+})
+
+//Update a person 
+app.put('/persons/:id', (request, response, next) =>{
+    const {name, number} = request.body
+
+    Person.findById(request.params.id)
+    .then(indiv =>{
+        if(!indiv){
+            return response.status(404).end
+        }
+
+        indiv.name = name
+        indiv.number = number 
+
+        return indiv.save().then((newIndiv) =>{
+            response.json(newIndiv)
+        })
+    })
+    .catch(error => next(error))
+   
+})

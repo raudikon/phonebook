@@ -1,104 +1,131 @@
+//express
 const express = require('express')
 const app = express()
-const cors = require('cors')
-
-app.use(cors())
 app.use(express.json())
-
-//morgan
-var morgan = require('morgan')
-morgan.token('body', (req) => JSON.stringify(req.body));
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
-
-app.use(express.static('dist'))
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
 
-let persons = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
+//cors 
+const cors = require('cors')
+app.use(cors())
 
-//Get all persons
+//morgan
+var morgan = require('morgan')
+morgan.token('body', (req) => JSON.stringify(req.body));
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
+
+//minified frontend 
+//app.use(express.static('dist'))
+
+//mongoose
+const mongoose = require('mongoose')
+const password = process.argv[2]
+const url = `mongodb+srv://raudikon:${password}@cluster0.20yxzms.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0` //collection named phonebook
+
+mongoose.connect(url)
+    .then(console.log("connexion established~~~~~~~~~~~~~~~~~~~~~"))
+    .catch((error => console.log("connexion failed DDDDDDDDDDDDDDDDDDD:")))
+
+const personSchema = new mongoose.Schema({
+    name: String,
+    number: String
+})
+
+personSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()  // add id
+    delete returnedObject._id                            // remove _id
+    delete returnedObject.__v                            // remove __v
+  }
+})
+const Person = mongoose.model("Person", personSchema)
+
+//Get all persons 
 app.get('/persons', (request, response) => {
-  response.json(persons)
-})
-
-//Get info: # people and request time 
-app.get('/info', (request, response) => {
-    const myResponse = 
-    `Phonebook has info for ${persons.length} people. Request made at `
-    const myDate = new Date().toUTCString(); 
-    response.json(myResponse + myDate)
-})
-
-//Get a single person's info
-app.get('/persons/:id', (request, response) =>{
-    const id = request.params.id
-    const individual = persons.find(indiv => indiv.id === id)
-
-    if(individual){
-        response.json(individual)
-    }else{
-        response.status(404).end()
-    }
-})
-
-//Delete a single person 
-app.delete('/persons/:id', (request, response)=>{
-    const id = request.params.id
-    persons = persons.filter(person => person.id !== id.toString())
-    response.status(204).end()
+  Person.find({}).then(person => {
+    response.json(person)
+  })
 })
 
 //Add a person 
 app.post('/persons', (request, response) => {
-    const body = request.body
-    
-    if(!body.name){
-        return response.status(400).json({
-            error: 'Missing person name.'
-        })
-    }
-    if(!body.number){
-        return response.status(400).json({
-            error: 'Missing person number.'
-        })
-    }
-    if(persons.find(person => person.name === body.name)){
-        return response.status(400).json({
-            error: 'Person already exists!'
-        })
-    }
+    const body = request.body 
 
-    const newPerson = {
+    const indiv = new Person({
         name: body.name,
-        number: body.number,
-        id: (Math.floor(Math.random() * 100)).toString()
-    }
+        number: body.number 
+    })
 
-    persons = persons.concat(newPerson)
-    response.json(newPerson)
-    
+    indiv.save().then(
+        savedPerson => {
+            response.json(savedPerson)
+        }
+    )
+}) 
+
+//Get info: # people and request time 
+app.get('/info', (request, response) => {
+    let info = ""
+    Person.countDocuments()
+    .then(count =>{
+        info = `Phonebook has info for ${count} people. Request made at `
+        const myDate = new Date().toUTCString()
+        response.json(info + myDate)
+    })
 })
+
+
+
+//Get a single person's info
+app.get('/persons/:id', (request, response) =>{
+    const id = request.params.id
+    console.log("cheeeyhofhsdifhosdf")
+    console.log(request.params.id)
+    console.log("cheeeyhofhsdifhosdf")
+    Person.findById(id)
+        .then(individual => {
+            if(individual){
+                response.send(individual)
+            }else{
+                response.status(404).end()
+            }
+        })
+})
+
+//Delete a single person 
+app.delete('/persons/:id', (request, response) => {
+    console.log("tryna delete person with id ", request.params.id)
+    Person.findByIdAndDelete(request.params.id)
+    .then(result => { 
+        response.status(204).end()
+    })
+    .catch(error => console.log("weoops,... delete didn work :3"))
+
+})
+
+//Update a person 
+app.put('/persons/:id', (request, response, next) =>{
+    const {name, number} = request.body
+
+    Person.findById(request.params.id)
+    .then(indiv =>{
+        if(!indiv){
+            return response.status(404).end
+        }
+
+        indiv.name = name
+        indiv.number = number 
+
+        return indiv.save().then((newIndiv) =>{
+            response.json(newIndiv)
+        })
+    })
+    .catch(error => next(error))
+   
+})
+
+
+

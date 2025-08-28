@@ -1,2 +1,4 @@
 ### Delete a person
-DELETE https://phonebook-hqr8.onrender.com/persons/2
+# DELETE https://phonebook-hqr8.onrender.com/persons/2
+
+# DELETE http://localhost:3001/persons/68acbbed3cfbce8b949e64c6
