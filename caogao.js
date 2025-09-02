@@ -115,23 +115,3 @@ app.delete('/persons/:id', (request, response) => {
 
 })
 
-//Update a person 
-app.put('/persons/:id', (request, response, next) =>{
-    const {name, number} = request.body
-
-    Person.findById(request.params.id)
-    .then(indiv =>{
-        if(!indiv){
-            return response.status(404).end
-        }
-
-        indiv.name = name
-        indiv.number = number 
-
-        return indiv.save().then((newIndiv) =>{
-            response.json(newIndiv)
-        })
-    })
-    .catch(error => next(error))
-   
-})

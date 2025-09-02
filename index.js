@@ -18,7 +18,7 @@ morgan.token('body', (req) => JSON.stringify(req.body));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
 
 //minified frontend 
-//app.use(express.static('dist'))
+app.use(express.static('dist'))
 
 //mongoose
 const mongoose = require('mongoose')
@@ -29,9 +29,27 @@ mongoose.connect(url)
     .then(console.log("connexion established~~~~~~~~~~~~~~~~~~~~~"))
     .catch((error => console.log("connexion failed DDDDDDDDDDDDDDDDDDD:")))
 
+
+const numberVal = (num) => {
+    const twoLeading = /\d{2}-\d{6,}/
+    const threeLeading = /\d{3}-\d{5,}/
+    return (twoLeading.test(num) || threeLeading.test(num))
+}
+
 const personSchema = new mongoose.Schema({
-    name: String,
-    number: String
+    name: {
+        type: String,
+        minLength: 3,
+        required: true 
+    },
+    number: {
+        type: String,
+        validate: {
+            validator: numberVal, 
+            message: "Not valid number."
+        },
+        required: [true, 'Plz put user phone num']
+    }
 })
 
 personSchema.set('toJSON', {
@@ -59,11 +77,16 @@ app.post('/persons', (request, response) => {
         number: body.number 
     })
 
-    indiv.save().then(
+    indiv.save()
+    .then(
         savedPerson => {
             response.json(savedPerson)
         }
     )
+    .catch(error => {
+        const messages = Object.values(error.errors).map(e => e.message);
+        response.status(400).json({ error: messages });
+    })
 }) 
 
 //Get info: # people and request time 
