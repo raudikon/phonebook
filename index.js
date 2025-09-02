@@ -17,17 +17,21 @@ var morgan = require('morgan')
 morgan.token('body', (req) => JSON.stringify(req.body));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
 
-//minified frontend 
+//minified frontend + mongoose connnection at deployment
 app.use(express.static('dist'))
-
-//mongoose
 const mongoose = require('mongoose')
-const password = process.argv[2]
-const url = `mongodb+srv://raudikon:${password}@cluster0.20yxzms.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0` //collection named phonebook
+const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(url)
-    .then(console.log("connexion established~~~~~~~~~~~~~~~~~~~~~"))
-    .catch((error => console.log("connexion failed DDDDDDDDDDDDDDDDDDD:")))
+mongoose.connect(MONGO_URI)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch(err => console.error("MongoDB connection error:", err));
+
+//mongoose connection local testing 
+// const password = process.argv[2]
+// const url = `mongodb+srv://raudikon:${password}@cluster0.20yxzms.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0` //collection named phonebook
+// mongoose.connect(url)
+//     .then(console.log("connexion established~~~~~~~~~~~~~~~~~~~~~"))
+//     .catch((error => console.log("connexion failed DDDDDDDDDDDDDDDDDDD:")))
 
 
 const numberVal = (num) => {
